@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Photo Preference Sorter</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="topbar" aria-labelledby="app-title">
+      <div>
+        <p class="eyebrow">Pairwise photo ranking</p>
+        <h1 id="app-title">Find your favourite</h1>
+      </div>
+      <div class="topbar-actions">
+        <label class="name-toggle" for="showNamesToggle">
+          <input id="showNamesToggle" type="checkbox" checked>
+          <span>Show names</span>
+        </label>
+        <button class="ghost-button" id="resetButton" type="button" disabled>Reset</button>
+      </div>
+    </section>
+
+    <section class="upload-panel" id="uploadPanel">
+      <label class="upload-box" for="photoInput">
+        <span class="upload-title">Choose photos</span>
+        <span class="upload-copy">Upload a batch, then pick the better image in each matchup.</span>
+        <input id="photoInput" type="file" accept="image/*" multiple>
+      </label>
+    </section>
+
+    <section class="status-grid" aria-live="polite">
+      <div class="status-item">
+        <span class="status-label">Next position</span>
+        <strong id="favoriteLabel">None yet</strong>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Favourites found</span>
+        <strong id="sortedLabel">0 / 0</strong>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Comparisons</span>
+        <strong id="comparisonLabel">0</strong>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Skipped by logic</span>
+        <strong id="skippedLabel">0</strong>
+      </div>
+    </section>
+
+    <section class="round-progress" id="roundProgress" hidden aria-labelledby="progressLabel">
+      <div class="progress-heading">
+        <div>
+          <span class="status-label" id="progressLabel">Progress until next favourite</span>
+          <strong id="progressText">0 / 0</strong>
+        </div>
+        <span class="muted" id="roundLabel"></span>
+      </div>
+      <progress id="progressBar" value="0" max="1">0 of 0</progress>
+    </section>
+
+    <section class="compare-panel" id="comparePanel" hidden aria-labelledby="compareTitle">
+      <div class="compare-heading">
+        <div>
+          <p class="eyebrow" id="roundEyebrow">Choose one</p>
+          <h2 id="compareTitle">Which photo do you prefer?</h2>
+        </div>
+        <p id="compareContext" class="muted"></p>
+      </div>
+
+      <div class="choices">
+        <button class="choice-card" id="leftChoice" type="button">
+          <img id="leftImage" alt="">
+          <span id="leftName"></span>
+        </button>
+        <button class="choice-card" id="rightChoice" type="button">
+          <img id="rightImage" alt="">
+          <span id="rightName"></span>
+        </button>
+      </div>
+    </section>
+
+    <section class="done-panel" id="donePanel" hidden>
+      <p class="eyebrow">Done</p>
+      <h2>Every favourite position is confirmed.</h2>
+      <button class="primary-button" id="downloadButton" type="button">Download ranking</button>
+    </section>
+
+    <section class="ranking-panel" id="rankingPanel" hidden aria-labelledby="rankingTitle">
+      <div class="section-heading">
+        <h2 id="rankingTitle">Favourites</h2>
+      </div>
+      <p class="empty-note" id="emptyRanking">No favourites are confirmed yet.</p>
+      <ol class="ranking-list" id="rankingList"></ol>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
