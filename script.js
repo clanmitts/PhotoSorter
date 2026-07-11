@@ -1,4 +1,10 @@
 const input = document.getElementById("photoInput");
+const manageButton = document.getElementById("manageButton");
+const manageDialog = document.getElementById("manageDialog");
+const closeManageButton = document.getElementById("closeManageButton");
+const managePhotoInput = document.getElementById("managePhotoInput");
+const managePhotoList = document.getElementById("managePhotoList");
+const managePhotoCount = document.getElementById("managePhotoCount");
 const undoButton = document.getElementById("undoButton");
 const resetButton = document.getElementById("resetButton");
 const showNamesToggle = document.getElementById("showNamesToggle");
@@ -36,10 +42,26 @@ let comparisons = 0;
 let skipped = 0;
 let preference = new Map();
 let undoHistory = [];
+let nextPhotoId = 0;
 
 input.addEventListener("change", event => {
   const files = Array.from(event.target.files || []).filter(file => file.type.startsWith("image/"));
   if (files.length) startSort(files);
+});
+
+manageButton.addEventListener("click", openPhotoManager);
+closeManageButton.addEventListener("click", () => manageDialog.close());
+manageDialog.addEventListener("click", event => {
+  if (event.target === manageDialog) manageDialog.close();
+});
+managePhotoInput.addEventListener("change", event => {
+  const files = Array.from(event.target.files || []).filter(file => file.type.startsWith("image/"));
+  if (files.length) addPhotos(files);
+  event.target.value = "";
+});
+managePhotoList.addEventListener("click", event => {
+  const deleteButton = event.target.closest("[data-delete-photo]");
+  if (deleteButton) deletePhoto(deleteButton.dataset.deletePhoto);
 });
 
 resetButton.addEventListener("click", resetApp);
@@ -57,11 +79,8 @@ document.addEventListener("keydown", event => {
 
 function startSort(files) {
   revokePhotoUrls();
-  photos = files.map((file, index) => ({
-    id: `photo-${index}`,
-    name: file.name,
-    url: URL.createObjectURL(file)
-  }));
+  nextPhotoId = 0;
+  photos = files.map(createPhoto);
   remaining = [...photos];
   favourites = [];
   roundQueue = [];
@@ -73,6 +92,7 @@ function startSort(files) {
   undoHistory = [];
 
   undoButton.disabled = true;
+  manageButton.disabled = false;
   resetButton.disabled = false;
   uploadPanel.hidden = true;
   rankingPanel.hidden = false;
@@ -92,16 +112,155 @@ function resetApp() {
   skipped = 0;
   preference = new Map();
   undoHistory = [];
+  nextPhotoId = 0;
   input.value = "";
+  managePhotoInput.value = "";
 
   undoButton.disabled = true;
+  manageButton.disabled = true;
   resetButton.disabled = true;
   uploadPanel.hidden = false;
   comparePanel.hidden = true;
   roundProgress.hidden = true;
   rankingPanel.hidden = true;
   donePanel.hidden = true;
+  if (manageDialog.open) manageDialog.close();
   updateDisplay();
+}
+
+function createPhoto(file) {
+  return {
+    id: `photo-${nextPhotoId++}`,
+    name: file.name,
+    url: URL.createObjectURL(file)
+  };
+}
+
+function openPhotoManager() {
+  renderPhotoManager();
+  manageDialog.showModal();
+}
+
+function addPhotos(files) {
+  const addedPhotos = files.map(createPhoto);
+  photos.push(...addedPhotos);
+  remaining.push(...addedPhotos);
+  addedPhotos.forEach(photo => preference.set(photo.id, new Set()));
+  clearUndoHistory();
+
+  if (donePanel.hidden) {
+    roundQueue.push(...addedPhotos);
+    updateDisplay();
+  } else {
+    donePanel.hidden = true;
+    beginRound();
+  }
+
+  renderPhotoManager();
+}
+
+function deletePhoto(photoId) {
+  const photo = photoById(photoId);
+  if (!photo) return;
+
+  const comparisonWasRemoved = waitingComparison && (
+    waitingComparison.left.id === photoId || waitingComparison.right.id === photoId
+  );
+  const contenderWasRemoved = contender?.id === photoId;
+
+  photos = photos.filter(item => item.id !== photoId);
+  remaining = remaining.filter(item => item.id !== photoId);
+  favourites = favourites.filter(item => item.id !== photoId);
+  roundQueue = roundQueue.filter(item => item.id !== photoId);
+  preference.delete(photoId);
+  preference.forEach(losers => losers.delete(photoId));
+  URL.revokeObjectURL(photo.url);
+  clearUndoHistory();
+
+  if (comparisonWasRemoved) {
+    waitingComparison = null;
+    comparePanel.hidden = true;
+  }
+  if (contenderWasRemoved) contender = null;
+
+  renderPhotoManager();
+
+  if (!photos.length) {
+    resetEmptyCollection();
+    return;
+  }
+
+  manageButton.disabled = false;
+  rankingPanel.hidden = false;
+
+  if (!remaining.length) {
+    finishSort();
+  } else if (!contender) {
+    beginRound();
+  } else if (!waitingComparison) {
+    updateDisplay();
+    continueRound();
+  } else {
+    showWaitingComparison();
+    updateDisplay();
+  }
+}
+
+function resetEmptyCollection() {
+  remaining = [];
+  favourites = [];
+  roundQueue = [];
+  contender = null;
+  waitingComparison = null;
+  comparisons = 0;
+  skipped = 0;
+  preference = new Map();
+  input.value = "";
+  managePhotoInput.value = "";
+  manageButton.disabled = true;
+  resetButton.disabled = true;
+  uploadPanel.hidden = false;
+  comparePanel.hidden = true;
+  roundProgress.hidden = true;
+  rankingPanel.hidden = true;
+  donePanel.hidden = true;
+  manageDialog.close();
+  updateDisplay();
+}
+
+function clearUndoHistory() {
+  undoHistory = [];
+  undoButton.disabled = true;
+}
+
+function renderPhotoManager() {
+  managePhotoCount.textContent = `${photos.length} ${photos.length === 1 ? "photo" : "photos"}`;
+  managePhotoList.innerHTML = "";
+
+  photos.forEach((photo, index) => {
+    const item = document.createElement("article");
+    const image = document.createElement("img");
+    const details = document.createElement("div");
+    const position = document.createElement("span");
+    const name = document.createElement("strong");
+    const deleteButton = document.createElement("button");
+
+    item.className = "manage-photo-item";
+    image.src = photo.url;
+    image.alt = "";
+    position.className = "manage-photo-position";
+    position.textContent = `#${index + 1}`;
+    name.textContent = photo.name;
+    deleteButton.className = "delete-photo-button";
+    deleteButton.type = "button";
+    deleteButton.dataset.deletePhoto = photo.id;
+    deleteButton.setAttribute("aria-label", `Delete ${photo.name}`);
+    deleteButton.textContent = "Delete";
+
+    details.append(position, name);
+    item.append(image, details, deleteButton);
+    managePhotoList.append(item);
+  });
 }
 
 function beginRound() {
@@ -285,6 +444,7 @@ function updateDisplay() {
   sortedLabel.textContent = `${favourites.length} / ${photos.length}`;
   comparisonLabel.textContent = String(comparisons);
   skippedLabel.textContent = String(skipped);
+  manageButton.disabled = photos.length === 0;
 
   if (photos.length && remaining.length) {
     favoriteLabel.textContent = `#${roundNumber}`;

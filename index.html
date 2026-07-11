@@ -18,6 +18,7 @@
           <input id="showNamesToggle" type="checkbox" checked>
           <span>Show names</span>
         </label>
+        <button class="ghost-button" id="manageButton" type="button" disabled>Manage photos</button>
         <button class="ghost-button" id="undoButton" type="button" disabled aria-keyshortcuts="Control+Z Meta+Z">Undo</button>
         <button class="ghost-button" id="resetButton" type="button" disabled>Reset</button>
       </div>
@@ -97,6 +98,24 @@
     </section>
   </main>
 
+  <dialog class="manage-dialog" id="manageDialog" aria-labelledby="manageTitle">
+    <div class="manage-dialog-header">
+      <div>
+        <p class="eyebrow">Photo collection</p>
+        <h2 id="manageTitle">Manage photos</h2>
+      </div>
+      <button class="icon-button" id="closeManageButton" type="button" aria-label="Close manage photos">&times;</button>
+    </div>
+
+    <div class="manage-actions">
+      <label class="primary-button add-photos-button" for="managePhotoInput">Add more photos</label>
+      <input id="managePhotoInput" type="file" accept="image/*" multiple>
+      <span class="muted" id="managePhotoCount">0 photos</span>
+    </div>
+
+    <p class="manage-help">Deleting a photo keeps every other photo in its current order.</p>
+    <div class="manage-photo-list" id="managePhotoList"></div>
+  </dialog>
   <script src="script.js"></script>
 </body>
 </html>

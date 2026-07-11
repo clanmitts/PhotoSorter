@@ -315,6 +315,123 @@ progress::-moz-progress-bar {
   font-size: 0.9rem;
 }
 
+
+#managePhotoInput {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+}
+
+.manage-dialog {
+  width: min(720px, calc(100% - 28px));
+  max-height: min(780px, calc(100vh - 40px));
+  border: 2px solid var(--fg);
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.manage-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.52);
+}
+
+.manage-dialog-header,
+.manage-actions {
+  display: flex;
+  align-items: center;
+}
+
+.manage-dialog-header {
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.manage-dialog-header .eyebrow {
+  margin-bottom: 5px;
+}
+
+.icon-button {
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid var(--fg);
+  background: var(--bg);
+  color: var(--fg);
+  cursor: pointer;
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.manage-actions {
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 24px 12px;
+}
+
+.add-photos-button {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.manage-help {
+  padding: 0 24px 16px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.manage-photo-list {
+  max-height: min(520px, calc(100vh - 250px));
+  overflow-y: auto;
+  border-top: 1px solid var(--line);
+}
+
+.manage-photo-item {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.manage-photo-item img {
+  width: 72px;
+  height: 58px;
+  object-fit: cover;
+  background: var(--soft);
+}
+
+.manage-photo-item strong,
+.manage-photo-position {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.manage-photo-position {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.delete-photo-button {
+  min-height: 38px;
+  border: 1px solid #9b1c1c;
+  background: var(--bg);
+  color: #9b1c1c;
+  padding: 0 13px;
+  cursor: pointer;
+}
+
+.delete-photo-button:hover {
+  background: #fff0f0;
+}
+
 @media (max-width: 760px) {
   .app-shell {
     width: min(100% - 20px, 1180px);
@@ -349,5 +466,22 @@ progress::-moz-progress-bar {
 
   .choice-card {
     grid-template-rows: minmax(210px, 42vh);
+  }
+
+  .manage-dialog-header,
+  .manage-actions {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .manage-photo-item {
+    grid-template-columns: 58px minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 10px 16px;
+  }
+
+  .manage-photo-item img {
+    width: 58px;
+    height: 50px;
   }
 }
