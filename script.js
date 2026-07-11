@@ -1,4 +1,5 @@
 const input = document.getElementById("photoInput");
+const undoButton = document.getElementById("undoButton");
 const resetButton = document.getElementById("resetButton");
 const showNamesToggle = document.getElementById("showNamesToggle");
 const uploadPanel = document.getElementById("uploadPanel");
@@ -34,6 +35,7 @@ let waitingComparison = null;
 let comparisons = 0;
 let skipped = 0;
 let preference = new Map();
+let undoHistory = [];
 
 input.addEventListener("change", event => {
   const files = Array.from(event.target.files || []).filter(file => file.type.startsWith("image/"));
@@ -41,10 +43,17 @@ input.addEventListener("change", event => {
 });
 
 resetButton.addEventListener("click", resetApp);
+undoButton.addEventListener("click", undoLastChoice);
 showNamesToggle.addEventListener("change", updateNameVisibility);
 leftChoice.addEventListener("click", () => choose(waitingComparison?.left.id));
 rightChoice.addEventListener("click", () => choose(waitingComparison?.right.id));
 downloadButton.addEventListener("click", downloadRanking);
+document.addEventListener("keydown", event => {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z" && !undoButton.disabled) {
+    event.preventDefault();
+    undoLastChoice();
+  }
+});
 
 function startSort(files) {
   revokePhotoUrls();
@@ -61,7 +70,9 @@ function startSort(files) {
   comparisons = 0;
   skipped = 0;
   preference = new Map(photos.map(photo => [photo.id, new Set()]));
+  undoHistory = [];
 
+  undoButton.disabled = true;
   resetButton.disabled = false;
   uploadPanel.hidden = true;
   rankingPanel.hidden = false;
@@ -80,8 +91,10 @@ function resetApp() {
   comparisons = 0;
   skipped = 0;
   preference = new Map();
+  undoHistory = [];
   input.value = "";
 
+  undoButton.disabled = true;
   resetButton.disabled = true;
   uploadPanel.hidden = false;
   comparePanel.hidden = true;
@@ -148,6 +161,9 @@ function askUser(left, right) {
 function choose(winnerId) {
   if (!waitingComparison || !winnerId) return;
 
+  undoHistory.push(createSnapshot());
+  undoButton.disabled = false;
+
   const loserId = winnerId === waitingComparison.left.id
     ? waitingComparison.right.id
     : waitingComparison.left.id;
@@ -158,6 +174,64 @@ function choose(winnerId) {
   comparePanel.hidden = true;
   updateDisplay();
   continueRound();
+}
+
+function createSnapshot() {
+  return {
+    remainingIds: remaining.map(photo => photo.id),
+    favouriteIds: favourites.map(photo => photo.id),
+    roundQueueIds: roundQueue.map(photo => photo.id),
+    contenderId: contender?.id || null,
+    waitingComparisonIds: waitingComparison
+      ? { left: waitingComparison.left.id, right: waitingComparison.right.id }
+      : null,
+    comparisons,
+    skipped,
+    preference: new Map(
+      Array.from(preference, ([id, losers]) => [id, new Set(losers)])
+    )
+  };
+}
+
+function undoLastChoice() {
+  const snapshot = undoHistory.pop();
+  if (!snapshot) return;
+
+  remaining = snapshot.remainingIds.map(photoById);
+  favourites = snapshot.favouriteIds.map(photoById);
+  roundQueue = snapshot.roundQueueIds.map(photoById);
+  contender = snapshot.contenderId ? photoById(snapshot.contenderId) : null;
+  waitingComparison = snapshot.waitingComparisonIds
+    ? {
+        left: photoById(snapshot.waitingComparisonIds.left),
+        right: photoById(snapshot.waitingComparisonIds.right)
+      }
+    : null;
+  comparisons = snapshot.comparisons;
+  skipped = snapshot.skipped;
+  preference = snapshot.preference;
+
+  undoButton.disabled = undoHistory.length === 0;
+  donePanel.hidden = true;
+  roundProgress.hidden = false;
+  showWaitingComparison();
+  updateDisplay();
+}
+
+function showWaitingComparison() {
+  if (!waitingComparison) {
+    comparePanel.hidden = true;
+    return;
+  }
+
+  const { left, right } = waitingComparison;
+  leftImage.src = left.url;
+  rightImage.src = right.url;
+  leftImage.alt = left.name;
+  rightImage.alt = right.name;
+  leftName.textContent = left.name;
+  rightName.textContent = right.name;
+  comparePanel.hidden = false;
 }
 
 function confirmFavourite(photo) {
